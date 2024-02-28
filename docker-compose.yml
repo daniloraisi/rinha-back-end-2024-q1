@@ -1,0 +1,69 @@
+services:
+  traefik:
+    image: "traefik:v2.11"
+    ports:
+      - "8080:8080"
+      - "9999:3000"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./config/traefik.yml:/etc/traefik/traefik.yml"
+    networks:
+      - "rinha"
+
+  api:
+    image: golang:alpine
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.entrypoints=api"
+      - "traefik.http.services.api.loadbalancer.healthcheck.path=/healthz"
+    env_file: .env
+    volumes:
+      - ".:/opt/app"
+    working_dir: "/opt/app"
+    command: "go run -mod=vendor ./cmd/..."
+    deploy:
+      replicas: 2
+    expose:
+      - "8080"
+    depends_on:
+      - "db"
+    networks:
+      - "rinha"
+
+  db:
+    image: "postgres:alpine"
+    environment:
+      - "POSTGRES_PASSWORD=admin"
+      - "POSTGRES_USER=admin"
+      - "POSTGRES_DB=rinha"
+    volumes:
+      - "./config/script.sql:/docker-entrypoint-initdb.d/script.sql"
+      - "pgdata:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+    networks:
+      - "rinha"
+
+  pgAdmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      - "PGADMIN_DEFAULT_EMAIL=admin@example.com"
+      - "PGADMIN_DEFAULT_PASSWORD=admin"
+      - "PGADMIN_LISTEN_PORT=8000"
+    volumes:
+      - "pgadmin_data:/var/lib/pgadmin"
+    ports:
+      - "8888:8000"
+    depends_on:
+      - "db"
+    networks:
+      - "rinha"
+
+networks:
+  rinha:
+    driver: "bridge"
+    name: "rinha"
+
+volumes:
+  pgdata:
+  pgadmin_data:
