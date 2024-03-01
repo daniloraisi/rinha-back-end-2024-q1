@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -15,7 +16,6 @@ import (
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
 	"github.com/daniloraisi/rinha-back-end/pkg/api"
 	"github.com/daniloraisi/rinha-back-end/pkg/db"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -28,7 +28,7 @@ var (
 )
 
 type Config interface {
-	GetDbConn() *sqlx.DB
+	GetDbConn() *sql.DB
 	GetPortHTTP() uint16
 	GetEnvironment() string
 }
@@ -85,6 +85,7 @@ func shutdown(server *http.Server, config Config, chShutdownComplete chan struct
 	l.Info("servidor HTTP desligado")
 
 	stop()
+	close(chShutdownComplete)
 }
 
 func listenAndServe(server *http.Server, portHTTP uint16, l *logger.Logger) {

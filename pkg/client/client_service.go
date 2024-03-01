@@ -2,11 +2,10 @@ package client
 
 import (
 	"context"
-
-	"github.com/jmoiron/sqlx"
+	"database/sql"
 )
 
 type Client interface {
 	GetExtrato(ctx context.Context, id string) (interface{}, error)
-	Transacionar(ctx context.Context, id string, tx *sqlx.Tx) (interface{}, error)
+	Transacionar(ctx context.Context, id string, tx *sql.Tx) (interface{}, error)
 }

@@ -10,7 +10,7 @@ CREATE UNLOGGED TABLE transacoes (
     valor INTEGER NOT NULL,
     tipo CHAR(1) NOT NULL,
     descricao VARCHAR(10) NOT NULL,
-    data_transacao TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_transacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_clientes_transacoes_id
         FOREIGN KEY (id_cliente) REFERENCES clientes(id)
 );
@@ -106,7 +106,7 @@ $$;
 CREATE OR REPLACE FUNCTION credito (
     id_cliente_tx INT,
     valor_tx INT,
-    descricao_tx INT
+    descricao_tx VARCHAR(20)
 )
 RETURNS TABLE (
     novo_saldo INT,
@@ -145,3 +145,43 @@ BEGIN
     TRUNCATE TABLE transacoes;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION public.extrato(
+	id_cliente_tx INT
+)
+RETURNS TABLE(
+    extrato jsonb
+)
+LANGUAGE SQL
+AS $$
+SELECT
+	json_build_object(
+		'saldo', json_build_object(
+			'total', s.valor,
+			'data_extrato', NOW(),
+			'limite', c.limite
+		),
+		'ultimas_transacoes', t.transacoes
+	)
+FROM
+	(
+		SELECT
+			json_agg(
+				json_build_object(
+					'valor', tx.valor,
+					'tipo', tx.tipo,
+					'descricao', tx.descricao,
+					'realizada_em', tx.data_transacao
+				)
+			) AS transacoes
+		FROM
+			transacoes tx
+		WHERE
+			tx.id_cliente = id_cliente_tx
+		LIMIT 10
+	) t,
+	saldos s
+	JOIN clientes c USING(id)
+WHERE s.id_cliente = id_cliente_tx;
+$$;
+

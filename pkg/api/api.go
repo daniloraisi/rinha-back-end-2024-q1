@@ -1,20 +1,20 @@
 package api
 
 import (
+	"database/sql"
 	"io"
 	"net/http"
 
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
 	"github.com/daniloraisi/rinha-back-end/pkg/db"
 	"github.com/daniloraisi/rinha-back-end/pkg/rest"
-	"github.com/jmoiron/sqlx"
 	"github.com/julienschmidt/httprouter"
 )
 
 var healthy = false
 
 type Config interface {
-	GetDbConn() *sqlx.DB
+	GetDbConn() *sql.DB
 	GetEnvironment() string
 }
 
