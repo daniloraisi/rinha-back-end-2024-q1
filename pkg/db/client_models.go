@@ -1,52 +1,36 @@
 package db
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"time"
 )
 
+type TransacaoInput struct {
+	Valor     uint64 `json:"valor"`
+	Tipo      string `json:"tipo"`
+	Descricao string `json:"descricao"`
+}
+
+type TransacaoOutput struct {
+	NovoSaldo int64  `db:"novo_saldo" json:"saldo"`
+	Limite    int64  `db:"limite" json:"limite"`
+	ComErro   bool   `db:"com_erro" json:"-"`
+	Mensagem  string `db:"mensagem" json:"-"`
+}
+
 type Saldo struct {
-	Total       uint64    `json:"total"`
-	DataExtrato time.Time `json:"data_extrato"`
-	Limite      uint64    `json:"limite"`
+	Total       int64     `json:"total" db:"valor"`
+	DataExtrato time.Time `json:"data_extrato" db:"data_extrato"`
+	Limite      int64     `json:"limite" db:"limite"`
 }
 
 type Transacao struct {
-	Valor       uint64    `json:"valor"`
-	Tipo        string    `json:"tipo"`
-	Descricao   string    `json:"descricao"`
-	RealizadaEm time.Time `json:"realizada_em"`
+	Valor       int64     `json:"valor" db:"valor"`
+	Tipo        string    `json:"tipo" db:"tipo"`
+	Descricao   string    `json:"descricao" db:"descricao"`
+	RealizadaEm time.Time `json:"realizada_em" db:"data_transacao"`
 }
 
 type Extrato struct {
 	Saldo      Saldo       `json:"saldo"`
-	Transacoes []Transacao `json:"ultimas_transacoes"`
-}
-
-func (e Extrato) Value() (driver.Value, error) {
-	return json.Marshal(e)
-}
-
-func (e *Extrato) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-
-	return json.Unmarshal(b, &e)
-}
-
-func (t Transacao) Value() (driver.Value, error) {
-	return json.Marshal(t)
-}
-
-func (t *Transacao) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-
-	return json.Unmarshal(b, &t)
+	Transacoes []Transacao `json:"ultimas_transacoes,omitempty"`
 }

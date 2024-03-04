@@ -1,20 +1,20 @@
 package api
 
 import (
-	"database/sql"
 	"io"
 	"net/http"
 
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
 	"github.com/daniloraisi/rinha-back-end/pkg/db"
 	"github.com/daniloraisi/rinha-back-end/pkg/rest"
+	"github.com/jmoiron/sqlx"
 	"github.com/julienschmidt/httprouter"
 )
 
 var healthy = false
 
 type Config interface {
-	GetDbConn() *sql.DB
+	GetDbConn() *sqlx.DB
 	GetEnvironment() string
 }
 
@@ -32,7 +32,8 @@ func NewRouter(config Config, dbConfig *db.DbConfig, l *logger.Logger) *httprout
 	}
 
 	mux.GET("/clientes/:id/extrato", rest.GetExtrato(clientService, l))
-	mux.POST("/clientes/:id/transacoes", rest.Transacionar(clientService))
+	mux.POST("/clientes/:id/transacoes", rest.Transacionar(clientService, l))
+	mux.POST("/reset-db", rest.ResetDB(config.GetDbConn(), l))
 
 	mux.GET("/healthz", healthCheck())
 

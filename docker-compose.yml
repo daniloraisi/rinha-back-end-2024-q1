@@ -11,16 +11,20 @@ services:
       - "rinha"
 
   api:
-    image: golang:alpine
+    image: daniloraisi/rinha-back-end-2024-q1:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=api"
       - "traefik.http.services.api.loadbalancer.healthcheck.path=/healthz"
+      - "traefik.http.services.api.loadbalancer.healthcheck.interval=10s"
     env_file: .env
-    volumes:
-      - ".:/opt/app"
-    working_dir: "/opt/app"
-    command: "go run -mod=vendor ./cmd/..."
+    #volumes:
+    #  - ".:/opt/app"
+    #working_dir: "/opt/app"
+    #command: "go run -mod=vendor ./cmd/..."
     deploy:
       replicas: 2
     expose:

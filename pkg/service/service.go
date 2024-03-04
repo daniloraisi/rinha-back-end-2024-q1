@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path"
@@ -16,6 +16,7 @@ import (
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
 	"github.com/daniloraisi/rinha-back-end/pkg/api"
 	"github.com/daniloraisi/rinha-back-end/pkg/db"
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -28,7 +29,7 @@ var (
 )
 
 type Config interface {
-	GetDbConn() *sql.DB
+	GetDbConn() *sqlx.DB
 	GetPortHTTP() uint16
 	GetEnvironment() string
 }

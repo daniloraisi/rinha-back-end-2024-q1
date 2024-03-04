@@ -1,11 +1,11 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
 	"github.com/daniloraisi/rinha-back-end/internal/pgsql"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -29,7 +29,7 @@ func New(user, passwd, addr, dbName, sslMode string, port uint16) *DbConfig {
 	}
 }
 
-func InitDB(config *DbConfig, l *logger.Logger) *sql.DB {
+func InitDB(config *DbConfig, l *logger.Logger) *sqlx.DB {
 	dbConfig := &pgsql.Config{
 		User:    config.User,
 		Passwd:  config.Passwd,
@@ -38,7 +38,7 @@ func InitDB(config *DbConfig, l *logger.Logger) *sql.DB {
 		SSLMode: config.SSLMode,
 	}
 	l.Debug(dbConfig.FormatDSN())
-	db, err := sql.Open("postgres", dbConfig.FormatDSN())
+	db, err := sqlx.Open("postgres", dbConfig.FormatDSN())
 	if err != nil {
 		l.Fatal("fatal! não foi possível inicializar o DB", l.ErrProp(err))
 	}

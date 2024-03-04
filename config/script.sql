@@ -30,8 +30,8 @@ BEGIN
     VALUES
         ('Ivo Matias', 1000 * 100),
         ('Electra Costa', 800 * 100),
-        ('Pilar Nascimento', 100000 * 100),
-        ('Carmelina Vaz', 10000 * 100),
+        ('Pilar Nascimento', 10000 * 100),
+        ('Carmelina Vaz', 100000 * 100),
         ('Marco Vilar', 5000 * 100);
 
     INSERT INTO saldos (id_cliente, valor)
@@ -46,6 +46,7 @@ CREATE OR REPLACE FUNCTION debito (
 )
 RETURNS TABLE (
     novo_saldo INT,
+    limite INT,
     com_erro BOOL,
     mensagem VARCHAR(20)
 )
@@ -72,7 +73,7 @@ BEGIN
     IF saldo_atual - valor_tx >= limite_atual * -1 THEN
         INSERT INTO transacoes
         VALUES
-            (DEFAULT, id_cliente_tx, valor_tx, 'D', descricao_tx, NOW());
+            (DEFAULT, id_cliente_tx, valor_tx, 'd', descricao_tx, NOW());
 
         UPDATE saldos
         SET
@@ -83,6 +84,7 @@ BEGIN
         RETURN QUERY
             SELECT
                 valor,
+                limite_atual,
                 FALSE,
                 'OK'::VARCHAR(20)
             FROM
@@ -93,6 +95,7 @@ BEGIN
         RETURN QUERY
             SELECT
                 valor,
+                limite_atual,
                 TRUE,
                 'saldo insuficiente'::VARCHAR(20)
             FROM
@@ -110,26 +113,35 @@ CREATE OR REPLACE FUNCTION credito (
 )
 RETURNS TABLE (
     novo_saldo INT,
+    limite INT,
     com_erro BOOL,
     mensagem VARCHAR(20)
 )
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    limite_atual INT;
 BEGIN
     PERFORM pg_advisory_xact_lock(id_cliente_tx);
 
+    SELECT c.limite
+    INTO limite_atual
+    FROM clientes c
+    WHERE
+        c.id = id_cliente_tx;
+        
     INSERT INTO transacoes
     VALUES
-        (DEFAULT, id_cliente_tx, valor_tx, 'C', descricao_tx, NOW());
+        (DEFAULT, id_cliente_tx, valor_tx, 'c', descricao_tx, NOW());
 
     RETURN QUERY
         UPDATE saldos
         SET
             valor = valor + valor_tx
         WHERE
-            id_cliente = id_cliente_tx
+            saldos.id_cliente = id_cliente_tx
         RETURNING
-            valor, FALSE, 'OK'::VARCHAR(20);
+            valor, limite_atual, FALSE, 'OK'::VARCHAR(20);
 END;
 $$;
 
@@ -156,32 +168,16 @@ LANGUAGE SQL
 AS $$
 SELECT
 	json_build_object(
-		'saldo', json_build_object(
-			'total', s.valor,
-			'data_extrato', NOW(),
-			'limite', c.limite
-		),
-		'ultimas_transacoes', t.transacoes
+		'valor', tx.valor,
+		'tipo', tx.tipo,
+		'descricao', tx.descricao,
+		'realizada_em', tx.data_transacao
 	)
 FROM
-	(
-		SELECT
-			json_agg(
-				json_build_object(
-					'valor', tx.valor,
-					'tipo', tx.tipo,
-					'descricao', tx.descricao,
-					'realizada_em', tx.data_transacao
-				)
-			) AS transacoes
-		FROM
-			transacoes tx
-		WHERE
-			tx.id_cliente = id_cliente_tx
-		LIMIT 10
-	) t,
-	saldos s
-	JOIN clientes c USING(id)
-WHERE s.id_cliente = id_cliente_tx;
+	transacoes tx
+WHERE
+	tx.id_cliente = id_cliente_tx
+ORDER BY tx.id DESC
+LIMIT 10;
 $$;
 

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"database/sql"
-
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
+	"github.com/jmoiron/sqlx"
 )
 
 type serverConfig struct {
 	portHTTP    uint16
-	dbConn      *sql.DB
+	dbConn      *sqlx.DB
 	logger      *logger.Logger
 	environment string
 }
@@ -17,7 +16,7 @@ func (config serverConfig) GetPortHTTP() uint16 {
 	return config.portHTTP
 }
 
-func (config serverConfig) GetDbConn() *sql.DB {
+func (config serverConfig) GetDbConn() *sqlx.DB {
 	return config.dbConn
 }
 

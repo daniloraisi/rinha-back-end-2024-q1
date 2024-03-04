@@ -6,11 +6,21 @@ import (
 	"reflect"
 
 	"github.com/daniloraisi/rinha-back-end/internal/logger"
+	"github.com/jmoiron/sqlx"
 	"github.com/julienschmidt/httprouter"
 )
 
-func Index() httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {}
+func ResetDB(db *sqlx.DB, l *logger.Logger) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		_, err := db.Exec("SELECT reset_db()")
+		if err != nil {
+			ErrorJSON(w, err, l)
+			return
+		}
+
+		l.Info("reset-db! Executado com sucesso.")
+		ResponseJSON(w, "ok", l)
+	}
 }
 
 func ResponseJSON(w http.ResponseWriter, response interface{}, l *logger.Logger) {
